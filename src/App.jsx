@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import Navbar from "./components/Navbar";
@@ -8,9 +8,9 @@ import Dashboard from "./pages/Dashboard";
 import Logs from "./pages/Logs";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 
-// Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -19,10 +19,34 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// -----------------------------
+// Layout Wrapper Fix
+// -----------------------------
+const Layout = ({ children }) => {
+  const location = useLocation();
+  const isAuthPage =
+    location.pathname === "/login" || location.pathname === "/signup";
+
+  return (
+    <div style={{ display: "flex", height: "100vh" }}>
+      {/* Sidebar only when NOT login/signup */}
+      {!isAuthPage && <Sidebar />}
+
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Navbar only when NOT login/signup */}
+        {!isAuthPage && <Navbar />}
+
+        <div style={{ padding: isAuthPage ? "0px" : "20px", flex: 1, overflowY: "auto" }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Handle token returned from Google OAuth (URL: ?token=xxxxx)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
@@ -30,7 +54,6 @@ const App = () => {
     if (token) {
       localStorage.setItem("token", token);
       setIsLoggedIn(true);
-      // Clean URL by removing ?token=
       window.history.replaceState({}, document.title, "/");
     } else {
       const existingToken = localStorage.getItem("token");
@@ -40,56 +63,44 @@ const App = () => {
 
   return (
     <Router>
-      <div style={{ display: "flex", height: "100vh" }}>
+      <Layout>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
 
-        {/* Show Sidebar + Navbar only when logged in */}
-        {isLoggedIn && <Sidebar />}
-        
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          {isLoggedIn && <Navbar />}
+          {/* Protected Routes */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
 
-          <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>
-            <Routes>
+          <Route
+            path="/logs"
+            element={
+              <ProtectedRoute>
+                <Logs />
+              </ProtectedRoute>
+            }
+          />
 
-              {/* Public Route */}
-              <Route path="/login" element={<Login />} />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
 
-              {/* Protected Routes */}
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/logs"
-                element={
-                  <ProtectedRoute>
-                    <Logs />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* 404 Page */}
-              <Route path="*" element={<NotFound />} />
-
-            </Routes>
-          </div>
-        </div>
-
-      </div>
+          {/* 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Layout>
     </Router>
   );
 };

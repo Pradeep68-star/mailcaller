@@ -14,8 +14,9 @@ const Login = () => {
 
     if (!email || !pass) return;
 
-    // later connect to backend
-    console.log("Login Successful!");
+    // ⭐ TEMPORARY LOGIN (UNTIL BACKEND IS READY)
+    localStorage.setItem("token", "dummy-token");
+    window.location.href = "/"; // ⭐ Redirect to Dashboard
   };
 
   return (
@@ -45,7 +46,7 @@ const Login = () => {
         <BrandAnimation />
       </div>
 
-      {/* DESCRIPTION TEXT */}
+      {/* DESCRIPTION */}
       <div
         style={{
           position: "absolute",
@@ -79,7 +80,6 @@ const Login = () => {
           animation: "slideIn 1.1s ease forwards",
         }}
       >
-        {/* Heading */}
         <h1
           style={{
             fontFamily: "'verdana', cursive",
@@ -112,7 +112,7 @@ const Login = () => {
           onChange={(e) => setEmail(e.target.value)}
           style={{
             fontFamily: "'sans-serif','Arial'",
-            fontSize: "16px", 
+            fontSize: "16px",
             width: "100%",
             padding: "15px",
             borderRadius: "12px",
@@ -122,10 +122,16 @@ const Login = () => {
             marginBottom: "10px",
           }}
         />
-
         {emailError && (
-          <div style={{ color: "#ff4d4d", fontFamily: "'sans-serif','Arial'",
-            fontSize: "16px", fontWeight: 500, marginBottom: "10px" }}>
+          <div
+            style={{
+              color: "#ff4d4d",
+              fontFamily: "'sans-serif','Arial'",
+              fontSize: "16px",
+              fontWeight: 500,
+              marginBottom: "10px",
+            }}
+          >
             ⚠ Please fill out this field
           </div>
         )}
@@ -166,16 +172,15 @@ const Login = () => {
             letterSpacing: "0.5px",
             transition: "0.25s",
           }}
-          onMouseEnter={(e) => (e.target.style.transform = "scale(1.02)")}
-          onMouseLeave={(e) => (e.target.style.transform = "scale(1)")}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
         >
           Log In
         </button>
 
-        {/* Divider */}
+        {/* DIVIDER */}
         <div
           style={{
-            
             textAlign: "center",
             opacity: 0.5,
             marginBottom: "20px",
@@ -204,26 +209,12 @@ const Login = () => {
             cursor: "pointer",
           }}
         >
-          {/* GOOGLE SVG LOGO */}
           <svg width="20" height="20" viewBox="0 0 488 512">
-            <path
-              fill="#EA4335"
-              d="M488 261.8c0-17.4-1.5-34.1-4.3-50.2H249v95h135.9c-5.9 31.6-23.5 58.4-50.3 76.2l81.2 63.1C456.1 397.7 488 334.4 488 261.8z"
-            />
-            <path
-              fill="#34A853"
-              d="M249 492c67.7 0 124.6-22.5 166.1-61.1l-81.2-63.1c-22.5 15.2-51.1 24.2-84.9 24.2-65.3 0-120.7-44.1-140.3-103.4H25.1v64.9C66.1 438.3 150.3 492 249 492z"
-            />
-            <path
-              fill="#4A90E2"
-              d="M108.7 288.6c-4.8-14.4-7.5-29.7-7.5-45.3s2.7-30.9 7.5-45.3v-64.9H25.1C9 183.5 0 221.4 0 261.8s9 78.3 25.1 112.4l83.6-64.9z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M249 101.4c36.8 0 69.9 12.7 96 37.7l71.7-71.7C373.6 23.2 316.7 0 249 0 150.3 0 66.1 53.7 25.1 139.4l83.6 64.9C128.3 145.5 183.7 101.4 249 101.4z"
-            />
+            <path fill="#EA4335" d="M488 261.8c0-17.4-1.5-34.1-4.3-50.2H249v95h135.9c-5.9 31.6-23.5 58.4-50.3 76.2l81.2 63.1C456.1 397.7 488 334.4 488 261.8z"/>
+            <path fill="#34A853" d="M249 492c67.7 0 124.6-22.5 166.1-61.1l-81.2-63.1c-22.5 15.2-51.1 24.2-84.9 24.2-65.3 0-120.7-44.1-140.3-103.4H25.1v64.9C66.1 438.3 150.3 492 249 492z"/>
+            <path fill="#4A90E2" d="M108.7 288.6c-4.8-14.4-7.5-29.7-7.5-45.3s2.7-30.9 7.5-45.3v-64.9H25.1C9 183.5 0 221.4 0 261.8s9 78.3 25.1 112.4l83.6-64.9z"/>
+            <path fill="#FBBC05" d="M249 101.4c36.8 0 69.9 12.7 96 37.7l71.7-71.7C373.6 23.2 316.7 0 249 0 150.3 0 66.1 53.7 25.1 139.4l83.6 64.9C128.3 145.5 183.7 101.4 249 101.4z"/>
           </svg>
-
           Continue with Google
         </button>
 
@@ -234,8 +225,6 @@ const Login = () => {
             fontSize: "15px",
             color: "#444",
             textAlign: "center",
-            fontFamily: "'sans-serif','Arial'",
-            fontSize: "16px",
           }}
         >
           Don’t have an account?
@@ -246,8 +235,6 @@ const Login = () => {
               marginLeft: "6px",
               fontWeight: 600,
               textDecoration: "none",
-              fontFamily: "'sans-serif','Arial'",
-            fontSize: "16px",
             }}
           >
             Sign Up
