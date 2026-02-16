@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # Logs
 logs
 *.log
@@ -22,3 +23,34 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+=======
+# Dependencies
+node_modules/
+
+# Env files
+.env
+.env.*
+backend/.env
+frontend/.env
+
+# Large files
+*.msi
+*.exe
+*.seb
+*.zip
+client_secret_*.json
+
+# Builds
+dist/
+build/
+.vite/
+
+# Logs
+logs
+*.log
+
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/
+>>>>>>> Stashed changes

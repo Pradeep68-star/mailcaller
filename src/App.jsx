@@ -45,7 +45,7 @@ const Layout = ({ children }) => {
 };
 
 const App = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -53,13 +53,16 @@ const App = () => {
 
     if (token) {
       localStorage.setItem("token", token);
-      setIsLoggedIn(true);
       window.history.replaceState({}, document.title, "/");
-    } else {
-      const existingToken = localStorage.getItem("token");
-      if (existingToken) setIsLoggedIn(true);
     }
+
+    setAuthChecked(true); // ✅ only after token check
   }, []);
+
+  // 🚨 Prevent rendering until token is processed
+  if (!authChecked) {
+    return null;
+  }
 
   return (
     <Router>
@@ -97,12 +100,12 @@ const App = () => {
             }
           />
 
-          {/* 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>
     </Router>
   );
 };
+
 
 export default App;
