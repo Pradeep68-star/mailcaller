@@ -9,12 +9,15 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
+    "chrono-node": "^2.9.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
+    "googleapis": "^171.4.0",
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^7.0.0",
+    "node-cron": "^4.2.1",
     "passport": "^0.6.0",
     "passport-google-oauth20": "^2.0.0"
   },

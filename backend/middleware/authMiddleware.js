@@ -3,7 +3,7 @@ import User from "../models/User.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-export const authMiddleware = async (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
@@ -32,3 +32,5 @@ export const authMiddleware = async (req, res, next) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
 };
+export default authMiddleware;
+

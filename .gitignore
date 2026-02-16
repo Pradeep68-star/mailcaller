@@ -1,46 +1,13 @@
-<<<<<<< Updated upstream
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-=======
 # Dependencies
 node_modules/
 
-# Env files
+# Environment files
 .env
 .env.*
 backend/.env
 frontend/.env
 
-# Large files
-*.msi
-*.exe
-*.seb
-*.zip
-client_secret_*.json
-
-# Builds
+# Build outputs
 dist/
 build/
 .vite/
@@ -53,4 +20,9 @@ logs
 .DS_Store
 .vscode/
 .idea/
->>>>>>> Stashed changes
+
+# Large / sensitive files
+client_secret_*.json
+*.msi
+*.exe
+*.zip
