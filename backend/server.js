@@ -12,6 +12,7 @@ import passport from "passport";
 import session from "express-session";
 import cors from "cors";
 import engineRoutes from "./routes/engineRoutes.js";
+import callRoutes from "./routes/callRoutes.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import googleRoutes from "./routes/googleRoutes.js";
@@ -63,6 +64,7 @@ app.use("/api/google", googleRoutes);
 app.use("/api/user", userRoutes);   // ✅ MOVED HERE
 app.use("/api/engine", engineRoutes);
 
+app.use("/api/call", callRoutes);
 
 app.get("/", (req, res) => {
   res.json({ status: "ok" });

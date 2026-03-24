@@ -1,76 +1,131 @@
 import express from "express";
 import passport from "passport";
+import jwt from "jsonwebtoken";
+
 import GmailAccount from "../models/GmailAccount.js";
-import authMiddleware  from "../middleware/authMiddleware.js";
+import User from "../models/User.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 /**
- * 🚀 START GMAIL OAUTH
- * ❌ NO authMiddleware
+ * 🚀 START GMAIL CONNECT
  */
-router.get("/connect", (req, res, next) => {
-  const { expectedGmail } = req.query;
+router.get("/connect", async (req, res, next) => {
+  try {
+    const { token, expectedGmail } = req.query;
 
-  if (!expectedGmail) {
+    // ❌ No token
+    if (!token) {
+      return res.redirect(
+        "http://localhost:5173/settings?error=no_token"
+      );
+    }
+
+    // ❌ No Gmail entered
+    if (!expectedGmail) {
+      return res.redirect(
+        "http://localhost:5173/settings?error=missing_gmail"
+      );
+    }
+
+    // ✅ VERIFY JWT TOKEN
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(payload.id);
+
+    if (!user) {
+      return res.redirect(
+        "http://localhost:5173/settings?error=invalid_user"
+      );
+    }
+
+    // 🔥 STORE USER ID IN SESSION
+    req.session.userId = user._id;
+
+    console.log("🔥 Stored userId in session:", user._id);
+
+    // 🚀 START GOOGLE OAUTH
+    passport.authenticate("google-gmail", {
+      scope: [
+        "profile",
+        "email",
+        "https://www.googleapis.com/auth/gmail.readonly",
+      ],
+      accessType: "offline",
+      prompt: "consent",
+    })(req, res, next);
+
+  } catch (err) {
+    console.error("❌ Token verification failed:", err.message);
+
     return res.redirect(
-      "http://localhost:5173/settings?error=missing_gmail"
+      "http://localhost:5173/settings?error=auth_failed"
     );
   }
-
-  req.session.expectedGmail = expectedGmail.toLowerCase();
-
-  passport.authenticate("google-gmail", {
-    scope: [
-      "profile",
-      "email",
-      "https://www.googleapis.com/auth/gmail.readonly",
-    ],
-    accessType: "offline",
-    prompt: "consent",
-  })(req, res, next);
 });
 
 /**
- * 🔁 OAUTH CALLBACK
- * ❌ NO authMiddleware
+ * 🔁 CALLBACK
  */
 router.get(
   "/callback",
   passport.authenticate("google-gmail", {
     failureRedirect:
-      "http://localhost:5173/settings?error=gmail_mismatch",
+      "http://localhost:5173/settings?error=gmail_failed",
     session: false,
   }),
   async (req, res) => {
-    const { gmail, accessToken, refreshToken } = req.user;
+    try {
+      const { gmail, accessToken, refreshToken } = req.user;
 
-    // ⚠️ Prototype version (single-user assumption)
-    await GmailAccount.findOneAndUpdate(
-      { gmailAddress: gmail },
-      {
-        gmailAddress: gmail,
-        accessToken,
-        refreshToken,
-        isActive: true,
-      },
-      { upsert: true }
-    );
+      // 🔥 GET USER ID FROM SESSION
+      const userId = req.session.userId;
 
-    req.session.expectedGmail = null;
+      console.log("🔥 Session userId:", userId);
 
-    res.redirect(
-      "http://localhost:5173/settings?gmail=connected"
-    );
+      if (!userId) {
+        console.log("❌ userId missing in session");
+        return res.redirect(
+          "http://localhost:5173/settings?error=no_user"
+        );
+      }
+
+      // 🔥 SAVE GMAIL ACCOUNT
+      await GmailAccount.findOneAndUpdate(
+        { userId },
+        {
+          userId,
+          gmailAddress: gmail,
+          accessToken,
+          refreshToken,
+          isActive: true,
+        },
+        { upsert: true, new: true }
+      );
+
+      console.log("✅ Gmail saved for user:", userId);
+
+      // 🔁 Redirect back to frontend
+      res.redirect(
+        "http://localhost:5173/settings?gmail=connected"
+      );
+
+    } catch (err) {
+      console.error("❌ Gmail connect error:", err);
+      res.redirect(
+        "http://localhost:5173/settings?error=server"
+      );
+    }
   }
 );
 
 /**
- * 🔐 PROTECTED ROUTES (JWT)
+ * 🔐 STATUS
  */
 router.get("/status", authMiddleware, async (req, res) => {
   const acc = await GmailAccount.findOne({
-    userId: req.user.id,
+    userId: req.user._id,
     isActive: true,
   });
 
@@ -82,13 +137,16 @@ router.get("/status", authMiddleware, async (req, res) => {
   });
 });
 
+/**
+ * 🔐 DISCONNECT
+ */
 router.post("/disconnect", authMiddleware, async (req, res) => {
   await GmailAccount.updateMany(
-    { userId: req.user.id },
+    { userId: req.user._id },
     { isActive: false }
   );
 
-  res.json({ message: "Gmail disconnected" });
+  res.json({ message: "Disconnected" });
 });
 
 export default router;

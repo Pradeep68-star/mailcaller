@@ -4,65 +4,108 @@ import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// 🔹 Update Phone
+// ============================
+// 📞 UPDATE PHONE
+// ============================
 router.put("/phone", authMiddleware, async (req, res) => {
   try {
     const { phoneNumber } = req.body;
 
     const user = await User.findByIdAndUpdate(
-      req.user.id,
+      req.user._id,
       { phoneNumber },
       { new: true }
     );
 
     res.json({ message: "Phone updated", user });
+
   } catch (error) {
+    console.error("Phone update error:", error);
     res.status(500).json({ error: "Failed to update phone" });
   }
 });
 
-// 🔹 Update Scan Interval
+// ============================
+// ⏱ UPDATE SCAN INTERVAL
+// ============================
 router.put("/interval", authMiddleware, async (req, res) => {
   try {
     const { scanInterval } = req.body;
 
     const user = await User.findByIdAndUpdate(
-      req.user.id,
+      req.user._id,
       { scanInterval },
       { new: true }
     );
 
     res.json({ message: "Interval updated", user });
+
   } catch (error) {
+    console.error("Interval update error:", error);
     res.status(500).json({ error: "Failed to update interval" });
   }
 });
 
-// 🔹 Add Keyword
+// ============================
+// ➕ ADD KEYWORD
+// ============================
 router.put("/keywords", authMiddleware, async (req, res) => {
   try {
-    const { keyword } = req.body;
+    let { keyword } = req.body;
 
-    const user = await User.findById(req.user.id);
+    if (!keyword || !keyword.trim()) {
+      return res.status(400).json({ error: "Keyword required" });
+    }
 
+    keyword = keyword.toLowerCase().trim();
+
+    const user = await User.findById(req.user._id);
+
+    // Avoid duplicates
     if (!user.keywords.includes(keyword)) {
       user.keywords.push(keyword);
       await user.save();
     }
 
-    res.json({ message: "Keyword added", user });
+    res.json({
+      message: "Keyword added",
+      user,
+    });
+
   } catch (error) {
-    res.status(500).json({ error: "Failed to update keywords" });
+    console.error("Add keyword error:", error);
+    res.status(500).json({ error: "Failed to add keyword" });
   }
 });
+
+// ============================
+// ❌ REMOVE KEYWORD
+// ============================
 router.put("/keywords/remove", authMiddleware, async (req, res) => {
-  const { keyword } = req.body;
-  const user = await User.findById(req.user.id);
-  user.keywords = user.keywords.filter((k) => k !== keyword);
-  await user.save();
-  res.json({ user });
+  try {
+    let { keyword } = req.body;
+
+    if (!keyword) {
+      return res.status(400).json({ error: "Keyword required" });
+    }
+
+    keyword = keyword.toLowerCase().trim();
+
+    const user = await User.findById(req.user._id);
+
+    user.keywords = user.keywords.filter((k) => k !== keyword);
+
+    await user.save();
+
+    res.json({
+      message: "Keyword removed",
+      user,
+    });
+
+  } catch (error) {
+    console.error("Remove keyword error:", error);
+    res.status(500).json({ error: "Failed to remove keyword" });
+  }
 });
-
-
 
 export default router;

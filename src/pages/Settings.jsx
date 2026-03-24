@@ -5,33 +5,27 @@ import {
   FiPhone,
   FiClock,
   FiSearch,
-  FiPhoneCall,
 } from "react-icons/fi";
 
 const API = "http://localhost:5000/api";
 
 const theme = {
-  primary: "#0b2545",
-  muted: "#6b7280",
-  shadow: "0 8px 20px rgba(0,0,0,0.06)",
   blue: "#0b2545",
-  green: "#0d8f2a",
-  red: "#8b0000",
+  shadow: "0 8px 20px rgba(0,0,0,0.06)",
 };
 
 const Settings = () => {
   const token = localStorage.getItem("token");
 
-  const [gmail, setGmail] = useState("");
   const [connectedGmail, setConnectedGmail] = useState(null);
-  const [loadingGmail, setLoadingGmail] = useState(false);
 
   const [phone, setPhone] = useState("");
   const [interval, setInterval] = useState(5);
   const [keywords, setKeywords] = useState([]);
   const [newKeyword, setNewKeyword] = useState("");
+  const [gmailInput, setGmailInput] = useState("");
 
-  // ---------------- FETCH USER SETTINGS ----------------
+  // ---------------- FETCH USER ----------------
   const fetchUserSettings = async () => {
     try {
       const res = await axios.get(`${API}/auth/me`, {
@@ -39,6 +33,7 @@ const Settings = () => {
       });
 
       const user = res.data.user;
+
       setPhone(user.phoneNumber || "");
       setInterval(user.scanInterval || 5);
       setKeywords(user.keywords || []);
@@ -95,97 +90,191 @@ const Settings = () => {
 
   // ---------------- ADD KEYWORD ----------------
   const addKeyword = async () => {
-    if (!newKeyword.trim()) return;
+  if (!newKeyword.trim()) return;
 
-    try {
-      const res = await axios.put(
-        `${API}/user/keywords`,
-        { keyword: newKeyword.toLowerCase() },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  try {
+    const res = await axios.put(
+      `${API}/user/keywords`,
+      { keyword: newKeyword.toLowerCase() },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-      setKeywords(res.data.user.keywords);
-      setNewKeyword("");
-    } catch {
-      alert("Failed to add keyword");
-    }
-  };
+    setKeywords(res.data.user.keywords);
+    setNewKeyword("");
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to add keyword");
+  }
+};
 
   // ---------------- DELETE KEYWORD ----------------
   const deleteKeyword = async (k) => {
+  try {
+    const res = await axios.put(
+      `${API}/user/keywords/remove`,
+      { keyword: k },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setKeywords(res.data.user.keywords);
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to remove keyword");
+  }
+};
+
+  // ---------------- CONNECT GMAIL ----------------
+  const connectGmail = () => {
+    if (!userEmail) {
+      alert("User email not loaded yet");
+      return;
+    }
+
+    window.location.href = `${API}/google/connect?expectedGmail=${userEmail}`;
+  };
+
+  // ---------------- DISCONNECT GMAIL ----------------
+  const disconnectGmail = async () => {
     try {
-      const res = await axios.put(
-        `${API}/user/keywords/remove`,
-        { keyword: k },
+      await axios.post(
+        `${API}/google/disconnect`,
+        {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setKeywords(res.data.user.keywords);
+      setConnectedGmail(null);
     } catch {
-      alert("Failed to remove keyword");
+      alert("Failed to disconnect Gmail");
     }
   };
 
   return (
-    <div style={{ padding: 30, background: "#f6f8fb", minHeight: "100vh" }}>
-      <h2>Settings</h2>
+    <div
+      style={{
+        padding: 30,
+        background: "#f6f8fb",
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: "900px" }}>
+        <h2>Settings</h2>
 
-      {/* ---------------- Phone ---------------- */}
-      <Card title="Your Phone Number" icon={<FiPhone />}>
-        <Input
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="+91XXXXXXXXXX"
-        />
-        <Button onClick={savePhone}>Save Phone</Button>
-      </Card>
+        {/* ---------------- GMAIL CONNECT ---------------- */}
+        <Card title="Gmail Connection" icon={<FiMail />}>
+  {connectedGmail ? (
+    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+      <span style={{ color: "green", fontWeight: 500 }}>
+        ✅ Connected: {connectedGmail}
+      </span>
 
-      {/* ---------------- Interval ---------------- */}
-      <Card title="Event Detection" icon={<FiClock />}>
-        <Input
-          value={interval}
-          onChange={(e) => setInterval(e.target.value)}
-          placeholder="Scan every X minutes"
-        />
-        <Button onClick={updateInterval}>Update Interval</Button>
-      </Card>
+      <Button onClick={disconnectGmail}>Disconnect</Button>
+    </div>
+  ) : (
+    <div>
+      <Input
+        placeholder="Enter Gmail to connect"
+        value={gmailInput}
+        onChange={(e) => setGmailInput(e.target.value)}
+      />
 
-      {/* ---------------- Keywords ---------------- */}
-      <Card title="Event Keywords" icon={<FiSearch />}>
-        <div>
-          {keywords.map((k) => (
-            <Chip key={k} removable onClick={() => deleteKeyword(k)}>
-              {k}
-            </Chip>
-          ))}
-        </div>
+      <Button
+  onClick={() => {
+    if (!gmailInput) {
+      alert("Enter Gmail first");
+      return;
+    }
 
-        <Row>
-          <Input
-            placeholder="Add keyword"
-            value={newKeyword}
-            onChange={(e) => setNewKeyword(e.target.value)}
-          />
-          <Button onClick={addKeyword}>Add</Button>
-        </Row>
-      </Card>
+    const token = localStorage.getItem("token");
+
+    window.location.href =
+      `http://localhost:5000/api/google/connect?token=${token}&expectedGmail=${gmailInput}`;
+  }}
+>
+  Connect Gmail
+</Button>
+    </div>
+  )}
+</Card>
+
+        {/* ---------------- Phone ---------------- */}
+        <Card title="Your Phone Number" icon={<FiPhone />}>
+          <Row>
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+91XXXXXXXXXX"
+            />
+            <Button onClick={savePhone}>Save</Button>
+          </Row>
+        </Card>
+
+        {/* ---------------- Interval ---------------- */}
+        <Card title="Event Detection Interval" icon={<FiClock />}>
+          <Row>
+            <Input
+              value={interval}
+              onChange={(e) => setInterval(e.target.value)}
+            />
+            <Button onClick={updateInterval}>Update</Button>
+          </Row>
+        </Card>
+
+        {/* ---------------- Keywords ---------------- */}
+        <Card title="Event Keywords" icon={<FiSearch />}>
+  <div style={{ marginBottom: 10 }}>
+    {keywords.map((k) => (
+      <Chip key={k} removable onClick={() => deleteKeyword(k)}>
+        {k}
+      </Chip>
+    ))}
+  </div>
+
+  <Row>
+    <Input
+      placeholder="Add keyword"
+      value={newKeyword}
+      onChange={(e) => setNewKeyword(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter"){
+          e.preventDefault();
+          addKeyword();
+
+        } 
+      }}
+    />
+    <Button onClick={addKeyword}>Add</Button>
+  </Row>
+</Card>
+      </div>
     </div>
   );
 };
 
-/* ---------- UI Components ---------- */
+/* ---------- UI COMPONENTS ---------- */
 
 const Card = ({ title, icon, children }) => (
   <div
     style={{
       background: "#fff",
-      padding: 20,
-      marginBottom: 20,
-      borderRadius: 12,
-      boxShadow: theme.shadow,
+      padding: 24,
+      marginBottom: 24,
+      borderRadius: 14,
+      boxShadow: "0 6px 18px rgba(0,0,0,0.05)",
     }}
   >
-    <h3>
+    <h3 style={{ display: "flex", gap: 10, marginBottom: 15 }}>
       {icon} {title}
     </h3>
     {children}
@@ -196,13 +285,13 @@ const Button = ({ children, onClick }) => (
   <button
     onClick={onClick}
     style={{
-      marginTop: 10,
-      padding: "8px 16px",
-      borderRadius: 8,
+      padding: "10px 16px",
+      borderRadius: 10,
       border: "none",
       background: theme.blue,
       color: "#fff",
       cursor: "pointer",
+      whiteSpace: "nowrap",
     }}
   >
     {children}
@@ -213,11 +302,10 @@ const Input = (props) => (
   <input
     {...props}
     style={{
-      padding: 10,
-      borderRadius: 8,
-      border: "1px solid #ccc",
-      width: "100%",
-      maxWidth: 300,
+      padding: 12,
+      borderRadius: 10,
+      border: "1px solid #ddd",
+      flex: 1,
     }}
   />
 );

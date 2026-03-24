@@ -7,10 +7,22 @@ const reminderSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
     emailId: String,
-    subject: String,
+
+    // 🔥 IMPROVED
+    subject: String,       // email subject
+    body: String,          // full parsed content
+
     eventTime: Date,
     reminderTimes: [Date],
+
+    // 🔥 NEW (VERY USEFUL)
+    source: {
+      type: String,
+      default: "gmail",
+    },
+
     status: {
       type: String,
       enum: ["scheduled", "completed"],
