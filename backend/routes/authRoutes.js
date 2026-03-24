@@ -2,6 +2,9 @@ import express from "express";
 import passport from "passport";
 import jwt from "jsonwebtoken";
 
+import authMiddleware from "../middleware/authMiddleware.js";
+import User from "../models/User.js";
+
 const router = express.Router();
 
 /**
@@ -31,13 +34,32 @@ router.post("/logout", (req, res) => {
 });
 
 /**
- * GET /api/auth/me
+ * 🔐 GET /api/auth/me
  */
-router.get("/me", (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ error: "Not authenticated" });
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    // 🔥 AUTO DEFAULT KEYWORDS
+    if (!user.keywords || user.keywords.length === 0) {
+      user.keywords = [
+        "meeting",
+        "call",
+        "interview",
+        "hackathon",
+        "deadline",
+        "contest",
+        "exam",
+      ];
+      await user.save();
+    }
+
+    res.json({ user });
+
+  } catch (err) {
+    console.error("Auth me error:", err);
+    res.status(500).json({ error: "Failed to fetch user" });
   }
-  res.json({ user: req.user });
 });
 
 /**
@@ -55,7 +77,6 @@ router.get(
 
 /**
  * GET /api/auth/google/callback
- * Google OAuth callback
  */
 router.get(
   "/google/callback",
@@ -71,8 +92,9 @@ router.get(
         { expiresIn: "7d" }
       );
 
-      // 🔥 IMPORTANT: Redirect to root with token
+      // 🔥 REDIRECT WITH TOKEN
       res.redirect(`http://localhost:5173/?token=${token}`);
+
     } catch (error) {
       console.error("JWT Error:", error);
       res.redirect("http://localhost:5173/login");

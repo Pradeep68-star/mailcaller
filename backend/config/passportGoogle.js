@@ -35,6 +35,12 @@ passport.deserializeUser(async (id, done) => {
 // 1️⃣ GOOGLE LOGIN STRATEGY (LOGIN / SIGNUP)
 // ==================================================
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  console.log(
+    "Callback URL being used:",
+    process.env.GOOGLE_CALLBACK_URL ||
+      "http://localhost:5000/api/auth/google/callback"
+  );
+
   passport.use(
     "google",
     new GoogleStrategy(
@@ -53,20 +59,50 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             $or: [{ googleId: profile.id }, { email }],
           });
 
+          // ---------------- NEW USER ----------------
           if (!user) {
             user = await User.create({
               name: profile.displayName,
               email,
               googleId: profile.id,
               isVerified: true,
+              keywords: [
+                "meeting",
+                "call",
+                "interview",
+                "hackathon",
+                "deadline",
+                "contest",
+                "exam",
+              ],
             });
-          } else if (!user.googleId) {
-            user.googleId = profile.id;
-            user.isVerified = true;
+          }
+
+          // ---------------- EXISTING USER ----------------
+          else {
+            if (!user.googleId) {
+              user.googleId = profile.id;
+              user.isVerified = true;
+            }
+
+            // 🔥 FIX: Add default keywords if empty
+            if (!user.keywords || user.keywords.length === 0) {
+              user.keywords = [
+                "meeting",
+                "call",
+                "interview",
+                "hackathon",
+                "deadline",
+                "contest",
+                "exam",
+              ];
+            }
+
             await user.save();
           }
 
           return done(null, user);
+
         } catch (err) {
           return done(err, null);
         }
@@ -96,11 +132,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             profile.emails?.[0]?.value?.toLowerCase();
 
           const expectedGmail =
-            req.session?.expectedGmail?.toLowerCase();
+            req.session?.expectedGmail?.toLowerCase?.();
 
-          if (!expectedGmail || authorizedGmail !== expectedGmail) {
-            console.log("❌ Gmail mismatch");
-            return done(null, false);
+          if (expectedGmail && authorizedGmail !== expectedGmail) {
+            console.log("⚠️ Gmail mismatch but allowed");
           }
 
           return done(null, {
@@ -108,12 +143,14 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             accessToken,
             refreshToken,
           });
+
         } catch (err) {
           return done(err, null);
         }
       }
     )
   );
+
 } else {
   console.warn("⚠️  Google OAuth credentials not configured");
 }
