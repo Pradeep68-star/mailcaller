@@ -10,14 +10,13 @@ const reminderSchema = new mongoose.Schema(
 
     emailId: String,
 
-    // 🔥 IMPROVED
-    subject: String,       // email subject
-    body: String,          // full parsed content
+    subject: String,
 
     eventTime: Date,
     reminderTimes: [Date],
 
-    // 🔥 NEW (VERY USEFUL)
+    calledTimes: [Date],
+
     source: {
       type: String,
       default: "gmail",

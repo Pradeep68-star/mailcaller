@@ -1,5 +1,7 @@
 // src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
+import axios from "axios";
+const API = "http://localhost:5000/api";
 
 /**
  * Dashboard.jsx (complete)
@@ -323,8 +325,11 @@ const InlineCalendar = ({ events = [], selectedDate, setSelectedDate }) => {
 };
 /* ------------------- End InlineCalendar ------------------- */
 
+
 const Dashboard = () => {
   // scanner state (persisted)
+  const [stats, setStats] = useState({});
+  const token = localStorage.getItem("token");
   const [scanMode, setScanMode] = useState(() => localStorage.getItem("scanMode") || "COUNT");
   const [scanCount, setScanCount] = useState(() => parseInt(localStorage.getItem("scanCount") || "50", 10));
   const [scanHours, setScanHours] = useState(() => parseInt(localStorage.getItem("scanHours") || "24", 10));
@@ -345,6 +350,14 @@ const Dashboard = () => {
   });
 
   const [isScanning, setIsScanning] = useState(false);
+useEffect(() => {
+  fetchDashboard();
+
+  const interval = setInterval(fetchDashboard, 5000); // 🔥 live
+  return () => clearInterval(interval);
+}, []);
+
+
 
   useEffect(() => {
     // inject Poppins
@@ -368,68 +381,57 @@ const Dashboard = () => {
   useEffect(() => localStorage.setItem("recentEvents", JSON.stringify(recentEvents)), [recentEvents]);
   useEffect(() => localStorage.setItem("dashboardSelectedDate", selectedDate), [selectedDate]);
 
-  // simulate scan (Option 2 chosen earlier: generate events with proper ISO date)
   const runScan = async () => {
-    if (scanMode === "COUNT" && (!scanCount || scanCount <= 0)) {
-      alert("Enter a valid count (e.g., 50).");
-      return;
-    }
-    if (scanMode === "TIME" && (!scanHours || scanHours <= 0)) {
-      alert("Enter a valid hour range (e.g., 24).");
-      return;
-    }
+  setIsScanning(true);
+  setLastScanAt(new Date().toISOString());
 
-    setIsScanning(true);
-    await new Promise((r) => setTimeout(r, 900));
-
-    const processed = scanMode === "COUNT" ? scanCount : Math.min(500, Math.round(scanHours * 20));
-    const detected = Math.max(0, Math.round(processed * (0.06 + Math.random() * 0.12)));
-
-    const now = new Date();
-    const formattedNow = now.toISOString();
-
-    // generate events with ISO date (spread across recent 7 days)
-    const sampleTitles = [
-      "Meeting: Vendor Sync",
-      "Invoice Due",
-      "Interview Invitation",
-      "Weekly Standup",
-      "Appointment: Doctor",
-      "Team Offsite",
-      "Project Delivery",
-    ];
-
-    const newEvents = Array.from({ length: detected || 1 }).map((_, i) => {
-      const title = sampleTitles[Math.floor(Math.random() * sampleTitles.length)];
-      const tag = Math.random() < 0.12 ? "URGENT" : Math.random() < 0.28 ? "UPCOMING" : "NEW";
-      // pick a day in last 7 days (so calendar shows them)
-      const when = new Date(Date.now() - Math.floor(Math.random() * 1000 * 60 * 60 * 24 * 7));
-      const isoDate = when.toISOString().slice(0, 10); // YYYY-MM-DD
-      return {
-        id: `${formattedNow}-${i}`,
-        title,
-        date: isoDate,
-        tag,
-      };
+  try {
+    await axios.post(`${API}/dashboard/scan`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
     });
 
-    const merged = [...newEvents, ...recentEvents].slice(0, 80); // store more if needed
+    await fetchDashboard(); // refresh real data
+  } catch (err) {
+    console.error("Scan failed", err);
+  }
 
-    setEmailsProcessed(processed);
-    setEventsDetected(detected);
-    setLastScanAt(formattedNow);
-    setRecentEvents(merged);
+  finally{
     setIsScanning(false);
-  };
+  }
+};
 
   const prettyLastScan = (iso) => {
     if (!iso) return "Never";
     const d = new Date(iso);
     return d.toLocaleString();
   };
+  const fetchDashboard = async () => {
+  try {
+    const statsRes = await axios.get(`${API}/dashboard/stats`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const calRes = await axios.get(`${API}/logs/calendar`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    setStats(statsRes.data);
+
+    const formatted = calRes.data.map((e, i) => ({
+      id: i,
+      title: e.subject,
+      date: e.date,
+      tag: "NEW",
+    }));
+
+    setRecentEvents(formatted);
+  } catch (err) {
+    console.error("Dashboard fetch error", err);
+  }
+};
 
   // helper to produce counts for small top stat card
-  const eventsThisWeek = eventsDetected || 0;
+ const eventsThisWeek = stats.totalEvents || 0;
 
   return (
     <div style={{
@@ -571,8 +573,24 @@ const Dashboard = () => {
               <div style={{ background: "#fff", borderRadius: 12, padding: 12, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)" }}>
                 <div style={{ fontWeight: 600, marginBottom: 8 }}>Quick Actions</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <button style={{ padding: "12px 14px", fontFamily: "verdana, sans-serif", fontSize: 13, borderRadius: 10, border: "1px solid rgba(0,0,0,0.06)", background: "linear-gradient(180deg,#fff,#f7f9fb)", cursor: "pointer" }}>Manual Scan</button>
-                  <button style={{ padding: "12px 14px", fontFamily: "verdana, sans-serif", fontSize: 13, borderRadius: 10, border: "1px solid rgba(0,0,0,0.06)", background: "linear-gradient(180deg,#fff,#f7f9fb)", cursor: "pointer" }}>Retry Failed</button>
+                  <button
+                    onClick={runScan}
+                    style={{ padding: "12px 14px", fontFamily: "verdana, sans-serif", fontSize: 13, borderRadius: 10, border: "1px solid rgba(0,0,0,0.06)", background: "linear-gradient(180deg,#fff,#f7f9fb)", cursor: "pointer" }}
+                  >
+                    Manual Scan
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      await axios.post(`${API}/dashboard/retry`, {}, {
+                        headers: { Authorization: `Bearer ${token}` }
+                      });
+                      fetchDashboard();
+                    }}
+                    style={{ padding: "12px 14px", fontFamily: "verdana, sans-serif", fontSize: 13, borderRadius: 10, border: "1px solid rgba(0,0,0,0.06)", background: "linear-gradient(180deg,#fff,#f7f9fb)", cursor: "pointer" }}
+                  >
+                    Retry Failed
+                  </button>
                 </div>
               </div>
             </div>

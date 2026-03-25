@@ -172,7 +172,23 @@ const Settings = () => {
         <h2>Settings</h2>
 
         {/* ---------------- GMAIL CONNECT ---------------- */}
-        <Card title="Gmail Connection" icon={<FiMail />}>
+        {/* ---------------- GMAIL CONNECT ---------------- */}
+<Card title="Gmail Connection" icon={<FiMail />}>
+
+  {/* 🔐 TRUST BLOCK */}
+  <div style={{
+    background: "#f1f5f9",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 15,
+    fontSize: 13,
+    color: "#333"
+  }}>
+    🔐 We only read emails to detect events <br />
+    🔒 We do NOT store full email content <br />
+    🚫 We do NOT modify your inbox
+  </div>
+
   {connectedGmail ? (
     <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
       <span style={{ color: "green", fontWeight: 500 }}>
@@ -190,20 +206,20 @@ const Settings = () => {
       />
 
       <Button
-  onClick={() => {
-    if (!gmailInput) {
-      alert("Enter Gmail first");
-      return;
-    }
+        onClick={() => {
+          if (!gmailInput) {
+            alert("Enter Gmail first");
+            return;
+          }
 
-    const token = localStorage.getItem("token");
+          const token = localStorage.getItem("token");
 
-    window.location.href =
-      `http://localhost:5000/api/google/connect?token=${token}&expectedGmail=${gmailInput}`;
-  }}
->
-  Connect Gmail
-</Button>
+          window.location.href =
+            `${API}/google/connect?token=${token}&expectedGmail=${gmailInput}`;
+        }}
+      >
+        Connect Gmail
+      </Button>
     </div>
   )}
 </Card>

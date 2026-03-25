@@ -16,7 +16,7 @@ router.get("/connect", async (req, res, next) => {
     const { token, expectedGmail } = req.query;
 
     // ❌ No token
-    if (!token) {
+    if (!token  || token.length < 20) {
       return res.redirect(
         "http://localhost:5173/settings?error=no_token"
       );
