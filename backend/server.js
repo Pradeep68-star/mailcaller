@@ -1,28 +1,30 @@
 // ⭐ LOAD ENV FIRST
 import "./config/env.js";
 
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
-import { startScanJob } from "./jobs/scanJob.js";
-
 import express from "express";
 import mongoose from "mongoose";
 import passport from "passport";
 import session from "express-session";
 import cors from "cors";
-import engineRoutes from "./routes/engineRoutes.js";
-import callRoutes from "./routes/callRoutes.js";
 
+// 🔥 ROUTES
+import logRoutes from "./routes/logRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import googleRoutes from "./routes/googleRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
-import "./config/passportGoogle.js"; // ⭐ MUST BE IMPORTED
+import engineRoutes from "./routes/engineRoutes.js";
+import callRoutes from "./routes/callRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// 🔥 CONFIG
+import "./config/passportGoogle.js";
 
-const app = express();   // ✅ DEFINE APP FIRST
+// 🔥 JOBS
+import { startScanJob } from "./jobs/scanJob.js";
+import { startCallJob } from "./jobs/callCron.js";
+
+// 🔥 CREATE APP FIRST (VERY IMPORTANT)
+const app = express();
 const PORT = process.env.PORT || 5000;
 
 // --------------------
@@ -57,27 +59,33 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // --------------------
-// ROUTES
+// ROUTES (AFTER app INIT)
 // --------------------
 app.use("/api/auth", authRoutes);
 app.use("/api/google", googleRoutes);
-app.use("/api/user", userRoutes);   // ✅ MOVED HERE
+app.use("/api/user", userRoutes);
 app.use("/api/engine", engineRoutes);
-
 app.use("/api/call", callRoutes);
+app.use("/api/logs", logRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
+// --------------------
 app.get("/", (req, res) => {
   res.json({ status: "ok" });
 });
 
 // --------------------
-// DB + SERVER START
+// START SERVER
 // --------------------
 const start = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB connected");
+
+    // 🔥 Start Jobs ONLY ONCE
     startScanJob();
+    startCallJob();
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
@@ -85,8 +93,6 @@ const start = async () => {
     console.error("Failed to start server:", err);
     process.exit(1);
   }
-  
-
 };
 
 start();

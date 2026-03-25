@@ -29,6 +29,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 5, // minutes
     },
+    lastScanTime: {
+  type: Date,
+  default: null
+},
 
     keywords: {
       type: [String],
